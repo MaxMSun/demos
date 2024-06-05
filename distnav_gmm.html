@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Gaussian Plot</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<style>
+    .slider-blue {
+        -webkit-appearance: none;
+        width: 150px;
+        margin: 20px;
+        height: 8px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        background-color: #D3D3D3;
+    }
+
+    .slider-blue::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background-color: #4285F4;
+        overflow: visible;
+        cursor: pointer;
+    }
+
+    .slider-blue::-moz-range-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background-color: #4285F4;
+        overflow: visible;
+        cursor: pointer;
+    }
+
+    .slider-orange {
+        -webkit-appearance: none;
+        width: 150px;
+        margin: 20px;
+        height: 8px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        background-color: #D3D3D3;
+    }
+
+    .slider-orange::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background-color: #FF8C00;
+        overflow: visible;
+        cursor: pointer;
+    }
+
+    .slider-orange::-moz-range-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background-color: #FF8C00;
+        overflow: visible;
+        cursor: pointer;
+    }
+
+    .slider-container {
+        display: flex;
+        align-items: center;
+        margin: 2px;
+    }
+</style>
+
+<body>
+    <div id="plot"></div>
+    <div class="slider-container">
+        <label for="mean-slider-1">Robot Mean: <span id="mean-value-1">0.1</span></label>
+        <input type="range" id="mean-slider-1" min="-0.8" max="0.8" step="0.0001" value="0.1" class="slider-blue">
+        <label for="variance-slider-1">Robot Variance: <span id="variance-value-1">0.01</span></label>
+        <input type="range" id="variance-slider-1" min="0.004" max="0.04" step="0.0001" value="0.01" class="slider-blue">
+    </div>
+    <div class="slider-container">
+        <label for="mean-slider-2">GMM Agent 1 Mean: <span id="mean-value-2">-0.1</span></label>
+        <input type="range" id="mean-slider-2" min="-0.8" max="0.8" step="0.0001" value="-0.1" class="slider-orange">
+        <label for="variance-slider-2">GMM Agent 1 Variance: <span id="variance-value-2">0.01</span></label>
+        <input type="range" id="variance-slider-2" min="0.004" max="0.04" step="0.0001" value="0.01" class="slider-orange">
+    </div>
+    <div class="slider-container">
+        <label for="mean-slider-3">GMM Agent 2 Mean: <span id="mean-value-3">-0.1</span></label>
+        <input type="range" id="mean-slider-3" min="-0.8" max="0.8" step="0.0001" value="-0.4" class="slider-orange">
+        <label for="variance-slider-3">GMM Agent 2 Variance: <span id="variance-value-3">0.01</span></label>
+        <input type="range" id="variance-slider-3" min="0.004" max="0.04" step="0.0001" value="0.01" class="slider-orange">
+    </div>
+    
+    <script>
+        function gaussianPDF(x, mean, variance) {
+            return (1 / Math.sqrt(2 * Math.PI * variance)) * Math.exp(-0.5 * Math.pow((x - mean) / Math.sqrt(variance), 2));
+        }
+
+        function updatePlot() {
+            const mean_1 = parseFloat(document.getElementById('mean-slider-1').value);
+            const variance_1 = parseFloat(document.getElementById('variance-slider-1').value);
+            document.getElementById('mean-value-1').textContent = mean_1.toFixed(4);
+            document.getElementById('variance-value-1').textContent = variance_1.toFixed(4);
+
+            const mean_2 = parseFloat(document.getElementById('mean-slider-2').value);
+            const variance_2 = parseFloat(document.getElementById('variance-slider-2').value);
+            document.getElementById('mean-value-2').textContent = mean_2.toFixed(4);
+            document.getElementById('variance-value-2').textContent = variance_2.toFixed(4);
+
+            const mean_3 = parseFloat(document.getElementById('mean-slider-3').value);
+            const variance_3 = parseFloat(document.getElementById('variance-slider-3').value);
+            document.getElementById('mean-value-3').textContent = mean_3.toFixed(4);
+            document.getElementById('variance-value-3').textContent = variance_3.toFixed(4);
+
+            const xlist = [];
+            const dx = 0.001;
+            for (let x_i = -1; x_i <= 1; x_i += dx ) { 
+                xlist.push(x_i);
+            }
+
+            var agent_1_pdf = [];
+            var norm_1 = 0.0;
+            var agent_2_pdf = [];
+            var norm_2 = 0.0;
+
+            var pdf_val = 0.0;
+            for (let i = 0; i < xlist.length; i++) {
+                var x_i = xlist[i];
+                
+                pdf_val = gaussianPDF(x_i, mean_1, variance_1);
+                agent_1_pdf.push(pdf_val);
+                norm_1 += dx * pdf_val;
+
+                pdf_val = 0.5 * gaussianPDF(x_i, mean_2, variance_2) + 0.5 * gaussianPDF(x_i, mean_3, variance_3);
+                agent_2_pdf.push(pdf_val);
+                norm_2 += dx * pdf_val;
+            }
+            for (let i = 0; i < xlist.length; i++) {
+                agent_1_pdf[i] /= norm_1;
+                agent_2_pdf[i] /= norm_2;
+            }
+            
+            const c = 0.1;
+            var agent_1_pdf_opt = agent_1_pdf.slice();
+            var agent_2_pdf_opt = agent_2_pdf.slice();
+            for (let iter = 0; iter < 100; iter++) {
+                norm_1 = 0.0;
+                for (let i = 0; i < xlist.length; i++) {
+                    agent_1_pdf_opt[i] *= Math.exp(-c * agent_2_pdf_opt[i]);
+                    norm_1 += dx * agent_1_pdf_opt[i];
+                }
+                for (let i = 0; i < xlist.length; i++) {
+                    agent_1_pdf_opt[i] /= norm_1;
+                }
+
+                norm_2 = 0.0;
+                for (let i = 0; i < xlist.length; i++) {
+                    agent_2_pdf_opt[i] *= Math.exp(-c * agent_1_pdf_opt[i]);
+                    norm_2 += dx * agent_2_pdf_opt[i];
+                }
+                for (let i = 0; i < xlist.length; i++) {
+                    agent_2_pdf_opt[i] /= norm_2;
+                }
+            }
+
+            const trace_1 = {
+                x: xlist,
+                y: agent_1_pdf,
+                mode: 'lines',
+                line: {
+                    dash: 'dash',
+                    color: '#1f77b4',
+                    width: 3
+                },
+                name: 'Agent 1 (Nominal)'
+                // type: 'scatter',
+            };
+            const trace_1_opt = {
+                x: xlist,
+                y: agent_1_pdf_opt,
+                mode: 'lines',
+                line: {
+                    dash: 'solid',
+                    color: '#1f77b4',
+                    width: 3
+                },
+                name: 'Agent 1 (Optimal)'
+                // type: 'scatter',
+            };
+            const trace_2 = {
+                x: xlist,
+                y: agent_2_pdf,
+                mode: 'lines',
+                line: {
+                    dash: 'dash',
+                    color: '#ff7f0e',
+                    width: 3
+                },
+                name: 'Agent 2 (Nominal)'
+                // type: 'scatter'
+            };
+            const trace_2_opt = {
+                x: xlist,
+                y: agent_2_pdf_opt,
+                mode: 'lines',
+                line: {
+                    dash: 'solid',
+                    color: '#ff7f0e',
+                    width: 3
+                },
+                name: 'Agent 2 (Optimal)'
+                // type: 'scatter'
+            };
+
+            const layout = {
+                title: `1D Demo`,
+                xaxis: { title: 'x' },
+                yaxis: { title: 'PDF', range: [0, 9] },  // Fix the y-axis range
+                width: 1000,  // Set the width of the plot
+                height: 600  // Set the height of the plot to make it square
+            };
+
+            Plotly.newPlot('plot', [trace_1, trace_1_opt, trace_2, trace_2_opt], layout);
+        }
+
+        document.getElementById('mean-slider-1').addEventListener('input', updatePlot);
+        document.getElementById('variance-slider-1').addEventListener('input', updatePlot);
+        document.getElementById('mean-slider-2').addEventListener('input', updatePlot);
+        document.getElementById('variance-slider-2').addEventListener('input', updatePlot);
+        document.getElementById('mean-slider-3').addEventListener('input', updatePlot);
+        document.getElementById('variance-slider-3').addEventListener('input', updatePlot);
+
+        // Initial plot
+        updatePlot();
+    </script>
+</body>
+</html>
