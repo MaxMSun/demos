@@ -8,6 +8,36 @@
 </head>
 
 <style>
+    .slider-dark {
+        -webkit-appearance: none;
+        width: 150px;
+        margin: 20px;
+        height: 8px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        background-color: #D3D3D3;
+    }
+
+    .slider-dark::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background-color: #46444C;
+        overflow: visible;
+        cursor: pointer;
+    }
+
+    .slider-dark::-moz-range-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background-color: #46444C;
+        overflow: visible;
+        cursor: pointer;
+    }
+
     .slider-blue {
         -webkit-appearance: none;
         width: 150px;
@@ -78,14 +108,18 @@
 <body>
     <div id="plot"></div>
     <div class="slider-container">
+        <label for="width-slider">Corridor Width: <span id="width-value">1.0</span></label>
+        <input type="range" id="width-slider" min="0.5" max="1.5" step="0.001" value="1.0" class="slider-dark">
+    </div>
+    <div class="slider-container">
         <label for="mean-slider-1">Agent 1 Mean: <span id="mean-value-1">0.1</span></label>
-        <input type="range" id="mean-slider-1" min="-0.8" max="0.8" step="0.0001" value="0.1" class="slider-blue">
+        <input type="range" id="mean-slider-1" min="-1.5" max="1.5" step="0.0001" value="0.1" class="slider-blue">
         <label for="variance-slider-1">Agent 1 Variance: <span id="variance-value-1">0.01</span></label>
         <input type="range" id="variance-slider-1" min="0.004" max="0.04" step="0.0001" value="0.01" class="slider-blue">
     </div>
     <div class="slider-container">
         <label for="mean-slider-2">Agent 2 Mean: <span id="mean-value-2">-0.1</span></label>
-        <input type="range" id="mean-slider-2" min="-0.8" max="0.8" step="0.0001" value="-0.1" class="slider-orange">
+        <input type="range" id="mean-slider-2" min="-1.5" max="1.5" step="0.0001" value="-0.1" class="slider-orange">
         <label for="variance-slider-2">Agent 2 Variance: <span id="variance-value-2">0.01</span></label>
         <input type="range" id="variance-slider-2" min="0.004" max="0.04" step="0.0001" value="0.01" class="slider-orange">
     </div>
@@ -96,6 +130,9 @@
         }
 
         function updatePlot() {
+            const width = parseFloat(document.getElementById('width-slider').value);
+            document.getElementById('width-value').textContent = width.toFixed(4);
+
             const mean_1 = parseFloat(document.getElementById('mean-slider-1').value);
             const variance_1 = parseFloat(document.getElementById('variance-slider-1').value);
             document.getElementById('mean-value-1').textContent = mean_1.toFixed(4);
@@ -107,8 +144,8 @@
             document.getElementById('variance-value-2').textContent = variance_2.toFixed(4);
 
             const xlist = [];
-            const dx = 0.001;
-            for (let x_i = -1; x_i <= 1; x_i += dx ) { 
+            const dx = width / 1000.0;
+            for (let x_i = -width; x_i <= width+dx; x_i += dx ) { 
                 xlist.push(x_i);
             }
 
@@ -165,7 +202,7 @@
                     color: '#1f77b4',
                     width: 3
                 },
-                name: 'Agent 1 (Nominal)'
+                name: 'Agent 1 Intent (Nominal)'
                 // type: 'scatter',
             };
             const trace_1_opt = {
@@ -177,7 +214,7 @@
                     color: '#1f77b4',
                     width: 3
                 },
-                name: 'Agent 1 (Optimal)'
+                name: 'Agent 1 Intent (Optimal)'
                 // type: 'scatter',
             };
             const trace_2 = {
@@ -189,7 +226,7 @@
                     color: '#ff7f0e',
                     width: 3
                 },
-                name: 'Agent 2 (Nominal)'
+                name: 'Agent 2 Intent (Nominal)'
                 // type: 'scatter'
             };
             const trace_2_opt = {
@@ -201,7 +238,7 @@
                     color: '#ff7f0e',
                     width: 3
                 },
-                name: 'Agent 2 (Optimal)'
+                name: 'Agent 2 Intent (Optimal)'
                 // type: 'scatter'
             };
 
@@ -209,13 +246,14 @@
                 title: `1D Demo`,
                 xaxis: { title: 'x' },
                 yaxis: { title: 'PDF', range: [0, 9] },  // Fix the y-axis range
-                width: 1000,  // Set the width of the plot
+                width: 1200,  // Set the width of the plot
                 height: 600  // Set the height of the plot to make it square
             };
 
             Plotly.newPlot('plot', [trace_1, trace_1_opt, trace_2, trace_2_opt], layout);
         }
 
+        document.getElementById('width-slider').addEventListener('input', updatePlot);
         document.getElementById('mean-slider-1').addEventListener('input', updatePlot);
         document.getElementById('variance-slider-1').addEventListener('input', updatePlot);
         document.getElementById('mean-slider-2').addEventListener('input', updatePlot);
