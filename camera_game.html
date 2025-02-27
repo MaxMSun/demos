@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Environment Visualization</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: white;
+        }
+        .container {
+            position: relative;
+            width: 800px;
+            height: 800px;
+            border: 3px solid black; /* Border for the environment */
+        }
+        .camera-view {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border: 3px solid black;
+            background-color: white;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .cross {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="env-container">
+        <canvas id="envCanvas" width="800" height="800"></canvas>
+        <div class="camera-view" id="cameraView">
+            <canvas id="cameraCanvas" width="240" height="240"></canvas>
+            <div class="cross"></div>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById("envCanvas");
+        const ctx = canvas.getContext("2d");
+        const cameraCanvas = document.getElementById("cameraCanvas");
+        const cameraCtx = cameraCanvas.getContext("2d");
+        const cameraView = document.getElementById("cameraView");
+        const cross = document.querySelector(".cross");
+        const envSize = 800;
+        const camSize = 240;
+        let cameraX = envSize / 2;
+        let cameraY = envSize / 2;
+        let targetX = cameraX;
+        let targetY = cameraY;
+        const trackingSpeed = 0.1;
+        
+        function drawEnvironment() {
+            ctx.fillStyle = "#F0F0F0";
+            ctx.fillRect(0, 0, envSize, envSize);
+            
+            // Green square
+            ctx.fillStyle = "#1F77B4";
+            ctx.fillRect(120, 120, 240, 240);
+            
+            // Blue triangle
+            ctx.fillStyle = "#FF7F0E";
+            ctx.beginPath();
+            ctx.moveTo(240, 480);
+            ctx.lineTo(560, 480);
+            ctx.lineTo(400, 720);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Red circle
+            ctx.fillStyle = "#2CA02C";
+            ctx.beginPath();
+            ctx.arc(640, 320, 120, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function updateCameraView() {
+            cameraX += (targetX - cameraX) * trackingSpeed;
+            cameraY += (targetY - cameraY) * trackingSpeed;
+            
+            let camX = Math.max(0, Math.min(envSize - camSize, cameraX - camSize / 2));
+            let camY = Math.max(0, Math.min(envSize - camSize, cameraY - camSize / 2));
+            
+            cameraView.style.left = `${camX}px`;
+            cameraView.style.top = `${camY}px`;
+            
+            cross.style.left = `${camSize / 2 - 5}px`;
+            cross.style.top = `${camSize / 2 - 5}px`;
+            
+            cameraCtx.clearRect(0, 0, camSize, camSize);
+            cameraCtx.drawImage(canvas, camX, camY, camSize, camSize, 0, 0, camSize, camSize);
+        }
+        
+        function animate() {
+            updateCameraView();
+            requestAnimationFrame(animate);
+        }
+        
+        document.getElementById("env-container").addEventListener("mousemove", (event) => {
+            const rect = document.getElementById("env-container").getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            targetX = mouseX;
+            targetY = mouseY;
+        });
+        
+        drawEnvironment();
+        animate();
+    </script>
+</body>
+</html>
